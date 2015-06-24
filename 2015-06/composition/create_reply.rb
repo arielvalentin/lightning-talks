@@ -1,18 +1,15 @@
 class CreateReplyHandler
-  def initialize(authorization_policy, event_tracker, event_generator)
+  def initialize(authorization_policy, reply_factory, event_tracker)
     @authorization_policy = authorization_policy
+    @reply_factory = reply_factory
     @event_tracker = event_tracker
-    @event_generator = event_generator
   end
 
   def process(reply_request)
-    Reply.new(user: reply_request.user,
-              parent: reply_request.discussion,
-              message: reply_request.message )
-
+    reply = @reply_factory.build_from(reply_request)
     if @authorization_policy.is_satisfied_by?(discussion)
       reply.save
-      @event_tracker.track_event(@event_generator.new_event(discussion_request))
+      @event_tracker.new_event(reply)
     end
   end
 end

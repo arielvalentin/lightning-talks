@@ -1,22 +1,15 @@
 class CreateDiscussionCommand
-  def initialize(authorization_policy, event_tracker, event_generator)
+  def initialize(authorization_policy, discussion_factory, event_tracker)
     @authorization_policy = authorization_policy
+    @discussion_factory = discussion_factory
     @event_tracker = event_tracker
-    @event_generator = event_generator
   end
 
   def process(discussion_request)
-    group = Group.find(discussion_request.group_id)
-    discussion = group.topics.find(discussion_request.topic_id).
-      discussions.new(
-        user: discussion_request.user,
-        subject: discussion_request.subject,
-        message: discussion_request.message
-    )
-
-      if @authorization_policy.is_satisfied_by?(discussion)
-        discussion.save!
-        @event_tracker.track_event(@event_generator.new_event(discussion_request))
-      end
+    discussion = @discussion_factory.build_from(discussion_request)
+    if @authorization_policy.is_satisfied_by?(discussion)
+      discussion.save!
+      @event_tracker.new_event(discussion)
+    end
   end
 end
